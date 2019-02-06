@@ -1,0 +1,57 @@
+#!/bin/sh
+
+if [ $# -eq 0 ]
+  then
+    echo "No arguments supplied!"
+    echo ""
+    echo "Synopsis"
+    echo "$0 searchString [options]"
+    echo ""
+    echo "Options"
+    echo "    -v -> verbose ...................... prints out all commands that are being run"
+    echo "    -d -> dry-run ...................... dry run, skips the apk download"
+    echo ""
+    echo "Sample"
+    echo "$0 google -> will download all apps that contain the keyword 'google' in the id or packagename"
+    echo ""
+    exit 1
+fi
+
+stCommand=$(adb shell pm list packages -f -3 | grep ${1})
+
+
+if [[ ${2} == "-v" ]] || [[ ${3} == "-v" ]]; then
+    echo ""
+    echo "Packages found: "
+    echo "${stCommand}"
+fi
+
+regex="package:(.*"$1".*)=(.+)"
+
+
+
+echo ""
+if [[ ${2} == "-d" ]] || [[ ${3} == "-d" ]]; then
+    echo "------ Dry run ------"
+fi
+
+echo "$stCommand" |
+while read -r line; do
+    if [[ $line =~ $regex ]]
+    then
+        fullPath=${BASH_REMATCH[1]}
+        apkName=${BASH_REMATCH[2]}
+        if ! [[ ${2} == "-d" ]] && ! [[ ${3} == "-d" ]]; then
+            if [[ ${2} == "-v" ]] || [[ ${3} == "-v" ]]; then
+                echo "adb pull ${fullPath} ${apkName}.apk"
+            fi
+            adb pull ${fullPath} ${apkName}.apk
+        else 
+            echo "adb pull ${fullPath} ${apkName}.apk"
+        fi
+    else
+        echo "No package found for the search strings"
+    fi
+done
+echo "------   End   ------"
+echo ""

@@ -1,0 +1,11 @@
+#!/bin/bash
+if [ $# -eq 0 ]
+  then
+    echo "No arguments supplied!"
+    echo ""
+    echo "Synopsis"
+    echo "$0 targetApk"
+    echo " Gives the versionCode and versionName of the application, simply by using the command: aapt dump badging and then applying a grep"
+    exit 1
+fi
+aapt dump badging $1 | grep versionCode

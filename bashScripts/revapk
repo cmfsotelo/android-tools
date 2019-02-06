@@ -1,0 +1,28 @@
+#!/bin/bash
+if [ $# -eq 0 ]
+  then
+    echo "No arguments supplied!"
+    echo ""
+    echo "- Synopsis"
+    echo "$0 targetApk"
+    echo ""
+    echo "- Decompiles the target apk using apktool and tries to unwrap the dex files into jar files. Output should be a folder with the name of the apk with the output of both commands"
+    echo ""
+    echo "- Dependencies (added to your path):"
+    echo "        ApkTool-> https://ibotpeaches.github.io/Apktool/"
+    echo "        Dex2Jar-> https://github.com/pxb1988/dex2jar"
+    exit 1
+fi
+
+file=$1
+folder=${file%.*}
+echo "Reverting apk..."
+apktool d ${file} -o ${folder}/app | grep -m 1 -o "abc" | grep -o "123"
+echo "Decompiling dex file to jar..."
+d2j-dex2jar.sh $1 | grep -m 1 -o "abc" | grep -o "123"
+mv ${folder}-dex2jar.jar ${folder} | grep -m 1 -o "abc" | grep -o "123"
+echo "Done."
+#call "%~dp0\dex2jar-2.0\d2j" %1
+#mv %~n1-dex2jar.jar %folder%/
+#call "%~dp0\jd-cli" %folder%/%~n1-dex2jar.jar -od %folder%/%~n1-java
+
