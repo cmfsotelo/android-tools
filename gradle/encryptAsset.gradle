@@ -1,0 +1,81 @@
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
+
+def assetsDir = new File(projectDir, 'src/debug/assets/toEncrypt')
+def targetDirAll = new File(projectDir, 'src/main/assets/')
+
+tasks.whenTaskAdded { task ->
+    if (task.name == 'mergeReleaseQualAssets') {
+//TODO -> Uncomment when enabling assets encryption/decryption
+//        task.dependsOn encryptAssets
+        task.dependsOn copyAssets
+    } else if (task.name == 'mergeReleaseAssets') {
+//TODO -> Uncomment when enabling assets encryption/decryption
+//        task.dependsOn encryptAssets
+        task.dependsOn copyAssets
+    } else if (task.name == 'mergeDebugAssets') {
+//TODO -> Uncomment when enabling assets encryption/decryption
+//        task.dependsOn encryptAssets
+        task.dependsOn copyAssets
+    }
+}
+
+task copyAssets(type: Copy) {
+    from assetsDir
+    into targetDirAll
+}
+
+task encryptAssets {
+    description = 'Encrypts the assets for all build types'
+    inputs.dir assetsDir
+    outputs.dir targetDirAll
+    doLast {
+        println "Encrypting assets"
+        targetDirAll.mkdirs()
+        encryptAsset(assetsDir, targetDirAll)
+    }
+}
+
+def removeFile(File file) {
+    println "Deleting> " + file.absolutePath
+    if (file.isDirectory() && file.listFiles().size() > 0) {
+        File[] files = file.listFiles();
+        for (int i = 0; i < files.size(); i++) {
+            removeFile(files[i]);
+        }
+    } else {
+        file.delete();
+    }
+}
+
+def encryptAsset(File asset, File outputDir) {
+    if (asset.isDirectory()) {
+        File[] files = asset.listFiles();
+        for (int i = 0; i < files.size(); i++) {
+            encryptAsset(files[i], outputDir);
+        }
+    } else {
+        File outputAsset = new File(outputDir.absolutePath + File.separator + asset.name);
+        encryptFile(asset, outputAsset);
+    }
+}
+
+def encryptFile(File inputFile, File outputFile) {
+    println "ENCRYPTING>" + inputFile.name;
+    Properties props = new Properties()
+    props.load(new FileInputStream(file("signing.properties")))
+    String keyString = props['encodeDecodeKey'].toString();
+    if (keyString.length() < 16)
+        keyString = keyString.padRight(16);
+    else
+        keyString = keyString.substring(0, 16);
+    byte[] KEY = keyString.getBytes("UTF-8");
+    SecretKeySpec key = new SecretKeySpec(KEY, "AES");
+    Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+    cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(KEY));
+    FileOutputStream fos = new FileOutputStream(outputFile);
+//    fos.write(cipher.doFinal(inputFile.getBytes()).encodeBase64().toString().bytes);
+    fos.write(cipher.doFinal(inputFile.getBytes()));
+    fos.close();
+}

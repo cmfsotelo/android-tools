@@ -1,0 +1,122 @@
+import java.util.regex.Pattern
+
+tasks.whenTaskAdded { task ->
+    if (task.name == 'generateDebugBuildConfig') {
+        task.dependsOn incrementVersionCodeDebug;
+    }
+    if (task.name == 'generateReleaseBuildConfig') {
+        task.dependsOn incrementVersionCodeRelease;
+    }
+}
+
+task incrementVersionCodeDebug {
+    doLast {
+        incrementVersionCodeDebugImpl();
+    }
+}
+
+task incrementVersionCodeRelease {
+    doLast {
+        incrementVersionCodeReleaseImpl();
+    }
+}
+
+def incrementVersionCodeDebugImpl() {
+    println "Staging - Incrementing the versionCode"
+    def buildFile = file("\\src\\main\\AndroidManifest.xml");
+    def pattern = Pattern.compile("versionCode=\"(\\d+)\"");
+    def manifestText = buildFile.getText();
+    def matcher = pattern.matcher(manifestText);
+    matcher.find();
+    String[] splitVersionName = project.ext.versionName.split("\\.");
+    int buildVersionCode = calculateVersionCode(splitVersionName, 0);
+    def manifestContent = matcher.replaceAll("versionCode=\"" + buildVersionCode + "\"");
+    buildFile.write(manifestContent);
+    incrementVersionName();
+}
+
+def incrementVersionCodeReleaseImpl() {
+    println "RELEASE - Incrementing the versionCode"
+    def buildFile = file("\\src\\main\\AndroidManifest.xml");
+    def pattern = Pattern.compile("versionCode=\"(\\d+)\"");
+    def manifestText = buildFile.getText();
+    def matcher = pattern.matcher(manifestText);
+    matcher.find();
+    String[] splitVersionName = project.ext.versionName.split("\\.");
+    int buildVersionCode = calculateVersionCode(splitVersionName, 9);
+    def manifestContent = matcher.replaceAll("versionCode=\"" + buildVersionCode + "\"");
+    buildFile.write(manifestContent);
+    incrementVersionName();
+}
+
+def incrementVersionName() {
+    println "Setting the versionName"
+    def buildFile = file("\\src\\main\\AndroidManifest.xml");
+    def pattern = Pattern.compile("versionName=\"([0-9.]*)\"");
+    def manifestText = buildFile.getText();
+    def matcher = pattern.matcher(manifestText);
+    matcher.find();
+    String[] splitVersionName = project.ext.versionName.split("\\.");
+    def manifestContent = matcher.replaceAll("versionName=\"" + (splitVersionName[0] + "." + splitVersionName[1] + "." + splitVersionName[2]) + "\"");
+    buildFile.write(manifestContent);
+}
+
+def int calculateVersionCode(String[] splitVersionName, int rightSideIncrement) {
+    int buildVersionCode = 0;
+    if (splitVersionName.length >= 3) {
+        int major = Integer.valueOf(splitVersionName[0]);
+        if (major >= 99) {
+            major = 99;
+        } else if (major >= 10 && major < 99) {
+            major = major * 10**4;
+        } else {
+            major = major * 10**5;
+        }
+        int minor = Integer.valueOf(splitVersionName[1]);
+        if (minor >= 99) {
+            minor = 99;
+        } else if (minor >= 10 && minor < 99) {
+            minor = minor * 10**2;
+        } else {
+            minor = minor * 10**3;
+        }
+        int patch = Integer.valueOf(splitVersionName[2]);
+        if (patch >= 99) {
+            patch = 99 * 10**0;
+        } else {
+            patch = patch * 10**1;
+        }
+        if (splitVersionName.length == 4) {
+            // make the last section to be only 8 versions for testing and 1 for production
+            if (rightSideIncrement != 9) {
+                if (rightSideIncrement > 8) {
+                    rightSideIncrement = 8;
+                } else {
+                    rightSideIncrement = Integer.valueOf(splitVersionName[3]);
+                }
+            }
+        }
+        buildVersionCode = major + minor + patch + rightSideIncrement;
+    }
+    return buildVersionCode;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
